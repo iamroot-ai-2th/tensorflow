@@ -31,8 +31,8 @@ SOURCE_URL = 'http://yann.lecun.com/exdb/mnist/'
 
 
 def _read32(bytestream):
-  dt = numpy.dtype(numpy.uint32).newbyteorder('>')
-  return numpy.frombuffer(bytestream.read(4), dtype=dt)[0]
+  dt = numpy.dtype(numpy.uint32).newbyteorder('>') # uint32의 big endian 방식의 데이터타입이다.
+  return numpy.frombuffer(bytestream.read(4), dtype=dt)[0] #4바이트를 빅 인디안 방식으로 읽어서 리턴 시켜준다.
 
 
 def extract_images(f):
@@ -51,23 +51,23 @@ def extract_images(f):
   print('Extracting', f.name)
   with gzip.GzipFile(fileobj=f) as bytestream:
     magic = _read32(bytestream)
-    if magic != 2051:
+    if magic != 2051: #magic 값이 2051이 아니면 정상적인이미지 파이들의 집합이 아니다.
       raise ValueError('Invalid magic number %d in MNIST image file: %s' %
                        (magic, f.name))
-    num_images = _read32(bytestream)
-    rows = _read32(bytestream)
-    cols = _read32(bytestream)
-    buf = bytestream.read(rows * cols * num_images)
-    data = numpy.frombuffer(buf, dtype=numpy.uint8)
-    data = data.reshape(num_images, rows, cols, 1)
+    num_images = _read32(bytestream) #이미지 갯수
+    rows = _read32(bytestream) #이미지의 넓이 
+    cols = _read32(bytestream) #이미지의 높이
+    buf = bytestream.read(rows * cols * num_images) # 전체 이미지의 크기를 읽어서 buf에 넣는다.
+    data = numpy.frombuffer(buf, dtype=numpy.uint8) #uint8  type으로 buf의 다중 배열을 생성한다.
+    data = data.reshape(num_images, rows, cols, 1) #배열을 (갯수, 행, 열, 1)형태의 배열로 만들어준다. 1은 왜 넣었을까요??
     return data
 
 
 def dense_to_one_hot(labels_dense, num_classes):
   """Convert class labels from scalars to one-hot vectors."""
-  num_labels = labels_dense.shape[0]
-  index_offset = numpy.arange(num_labels) * num_classes
-  labels_one_hot = numpy.zeros((num_labels, num_classes))
+  num_labels = labels_dense.shape[0] # 60,000개의 라벨이 들어가 있다.  
+  index_offset = numpy.arange(num_labels) * num_classes #[0, 10, 20, .... 599,990] 배열로 갓이 들어간다. 
+  labels_one_hot = numpy.zeros((num_labels, num_classes)) #0의로 채워진 60,000, 10의 2차 배열을 만들어준다.
   labels_one_hot.flat[index_offset + labels_dense.ravel()] = 1
   return labels_one_hot
 
@@ -88,13 +88,13 @@ def extract_labels(f, one_hot=False, num_classes=10):
   """
   print('Extracting', f.name)
   with gzip.GzipFile(fileobj=f) as bytestream:
-    magic = _read32(bytestream)
-    if magic != 2049:
+    magic = _read32(bytestream) # 32바이트를 읽고
+    if magic != 2049: #2049가 아니면MNIST label이 아니다.
       raise ValueError('Invalid magic number %d in MNIST label file: %s' %
                        (magic, f.name))
-    num_items = _read32(bytestream)
-    buf = bytestream.read(num_items)
-    labels = numpy.frombuffer(buf, dtype=numpy.uint8)
+    num_items = _read32(bytestream) #item 갯수
+    buf = bytestream.read(num_items) #아이템 갯수만큼 byte갯수를 읽어온다.
+    labels = numpy.frombuffer(buf, dtype=numpy.uint8) #uint8 타입으로 다중 어레이를 만든다.
     if one_hot:
       return dense_to_one_hot(labels, num_classes)
     return labels
@@ -191,7 +191,7 @@ def read_data_sets(train_dir,
                    one_hot=False,
                    dtype=dtypes.float32,
                    reshape=True,
-                   validation_size=5000):
+                   validation_size=5000): #train_dir -> /tmp/data/ one_hot 을 True로 호출
   if fake_data:
 
     def fake():
@@ -208,9 +208,9 @@ def read_data_sets(train_dir,
   TEST_LABELS = 't10k-labels-idx1-ubyte.gz'
 
   local_file = base.maybe_download(TRAIN_IMAGES, train_dir,
-                                   SOURCE_URL + TRAIN_IMAGES)
+                                   SOURCE_URL + TRAIN_IMAGES) #학습 데이터를 다운로드 하고
   with open(local_file, 'rb') as f:
-    train_images = extract_images(f)
+    train_images = extract_images(f) #이미지 압축을 해제하고 이미지파일들을 객체에 맵핑시켜준다. (갯수,row, col, 1)들어간 4차원 이미지 배열
 
   local_file = base.maybe_download(TRAIN_LABELS, train_dir,
                                    SOURCE_URL + TRAIN_LABELS)
