@@ -65,8 +65,8 @@ def extract_images(f):
 
 def dense_to_one_hot(labels_dense, num_classes):
   """Convert class labels from scalars to one-hot vectors."""
-  num_labels = labels_dense.shape[0] # 60,000개의 라벨이 들어가 있다.  
-  index_offset = numpy.arange(num_labels) * num_classes #[0, 10, 20, .... 599,990] 배열로 갓이 들어간다. 
+  num_labels = labels_dense.shape[0] # 60,000개의 라벨이 들어가 있다.
+  index_offset = numpy.arange(num_labels) * num_classes #[0, 10, 20, .... 599,990] 배열로 값이 들어간다.
   labels_one_hot = numpy.zeros((num_labels, num_classes)) #0의로 채워진 60,000, 10의 2차 배열을 만들어준다.
   labels_one_hot.flat[index_offset + labels_dense.ravel()] = 1
   return labels_one_hot
@@ -115,7 +115,7 @@ class DataSet(object):
     `[0, 1]`.
     """
     dtype = dtypes.as_dtype(dtype).base_dtype
-    if dtype not in (dtypes.uint8, dtypes.float32):
+    if dtype not in (dtypes.uint8, dtypes.float32):#dtype 값 검증 uint8, float32 값이 아니라면 아래 타입에러를 띄운다.
       raise TypeError('Invalid image dtype %r, expected uint8 or float32' %
                       dtype)
     if fake_data:
@@ -123,20 +123,20 @@ class DataSet(object):
       self.one_hot = one_hot
     else:
       assert images.shape[0] == labels.shape[0], (
-          'images.shape: %s labels.shape: %s' % (images.shape, labels.shape))
-      self._num_examples = images.shape[0]
+          'images.shape: %s labels.shape: %s' % (images.shape, labels.shape)) #images.shape와  labels.shape갯수가 다르면 메시지를 뿌리고 끝낸다.
+      self._num_examples = images.shape[0]  #_num_examples 값에 이미지 갯수를 넣어준다.
 
       # Convert shape from [num examples, rows, columns, depth]
       # to [num examples, rows*columns] (assuming depth == 1)
       if reshape:
         assert images.shape[3] == 1
         images = images.reshape(images.shape[0],
-                                images.shape[1] * images.shape[2])
+                                images.shape[1] * images.shape[2]) #images 55,000 , 28*28의 배열로 변경시켜준다.
       if dtype == dtypes.float32:
         # Convert from [0, 255] -> [0.0, 1.0].
-        images = images.astype(numpy.float32)
-        images = numpy.multiply(images, 1.0 / 255.0)
-    self._images = images
+        images = images.astype(numpy.float32) #dtype 이 float32이면 images의 타입을 numpy.float32이로 바꾼다. 
+        images = numpy.multiply(images, 1.0 / 255.0) #images값을 255로 나눠서 0~1사이의 값으로 변경해준다.  
+    self._images = images  #private데이터로 선언헤주고 아래의 함수를 통해서 값을 가져올수 있게 하였다. 
     self._labels = labels
     self._epochs_completed = 0
     self._index_in_epoch = 0
@@ -174,16 +174,16 @@ class DataSet(object):
       # Finished epoch
       self._epochs_completed += 1
       # Shuffle the data
-      perm = numpy.arange(self._num_examples)
-      numpy.random.shuffle(perm)
-      self._images = self._images[perm]
+      perm = numpy.arange(self._num_examples) # 0~ num_examples-1 의 값을 가지는 배열을 만들어준다.
+      numpy.random.shuffle(perm) # 위의 배열을 값을  섞는다.
+      self._images = self._images[perm]#perm 의 인덱스대로 _images의 이미지 배열 값을 바꿔준다.
       self._labels = self._labels[perm]
       # Start next epoch
-      start = 0
+      start = 0 #다시 start 값을 0으로 설정해준다.
       self._index_in_epoch = batch_size
       assert batch_size <= self._num_examples
     end = self._index_in_epoch
-    return self._images[start:end], self._labels[start:end]
+    return self._images[start:end], self._labels[start:end] #bactchsize 만큼의 랜덤한 image와 라벨을 반환해 준다. 
 
 
 def read_data_sets(train_dir,
@@ -232,10 +232,10 @@ def read_data_sets(train_dir,
         'Validation size should be between 0 and {}. Received: {}.'
         .format(len(train_images), validation_size))
 
-  validation_images = train_images[:validation_size]
-  validation_labels = train_labels[:validation_size]
-  train_images = train_images[validation_size:]
-  train_labels = train_labels[validation_size:]
+  validation_images = train_images[:validation_size] # 0~4999의  이미지를 검증용으로 뽑아낸다. 
+  validation_labels = train_labels[:validation_size] # 0~4999의  라벨을 검증용으로  뽑아낸다.
+  train_images = train_images[validation_size:] # 5000이후의 이미지를 추출해서 train image 배열로 추출한다.
+  train_labels = train_labels[validation_size:] # 5000이후의 라벨을 추출해서 train_labels 배열로 추출한다.
 
   train = DataSet(train_images, train_labels, dtype=dtype, reshape=reshape)
   validation = DataSet(validation_images,
@@ -244,7 +244,7 @@ def read_data_sets(train_dir,
                        reshape=reshape)
   test = DataSet(test_images, test_labels, dtype=dtype, reshape=reshape)
 
-  return base.Datasets(train=train, validation=validation, test=test)
+  return base.Datasets(train=train, validation=validation, test=test) #named tuple을 생성해서 구조체 처럼 데이터를 접근해서 쓸 수 있게 해준다. x.train x.validation, x.test
 
 
 def load_mnist(train_dir='MNIST-data'):
